@@ -866,3 +866,12 @@ void luaK_setlist (FuncState *fs, int base, int nelems, int tostore) {
   fs->freereg = base + 1;  /* free registers with list values */
 }
 
+void luaK_leavelexenvs(FuncState *fs) {
+  if (fs->envreg) {  /* lexical environment? */
+    LexEnvState *env = fs->envreg;
+    while(env) {
+      luaK_codeABC(fs, OP_LEAVE, env->reg, 0, 0);
+      env = env->parent;
+    }
+  }
+}

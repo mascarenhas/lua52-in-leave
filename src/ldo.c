@@ -159,7 +159,7 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
   struct lua_longjmp lj;
   lj.status = LUA_OK;
   lj.previous = L->errorJmp;  /* chain new error handler */
-  lj.env = NO_LEXENV;
+  lj.env = NULL;
   L->errorJmp = &lj;
   LUAI_TRY(L, &lj,
     (*f)(L, ud);

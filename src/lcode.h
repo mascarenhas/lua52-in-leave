@@ -76,5 +76,6 @@ LUAI_FUNC void luaK_prefix (FuncState *fs, UnOpr op, expdesc *v);
 LUAI_FUNC void luaK_infix (FuncState *fs, BinOpr op, expdesc *v);
 LUAI_FUNC void luaK_posfix (FuncState *fs, BinOpr op, expdesc *v1, expdesc *v2);
 LUAI_FUNC void luaK_setlist (FuncState *fs, int base, int nelems, int tostore);
+LUAI_FUNC void luaK_leavelexenvs(FuncState *fs);
 
 #endif

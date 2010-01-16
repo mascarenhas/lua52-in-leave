@@ -61,8 +61,6 @@ typedef struct Varlist {
 
 struct BlockCnt;  /* defined in lparser.c */
 
-#define NO_LEXENV NULL
-
 typedef struct LexEnvState {
   lu_byte reg;
   struct LexEnvState *parent;
