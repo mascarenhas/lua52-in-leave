@@ -66,6 +66,11 @@ typedef struct stringtable {
   int size;
 } stringtable;
 
+/* linked list active lexical environments */
+typedef struct LexEnv {
+  StkId reg;
+  struct LexEnv *parent;
+} LexEnv;
 
 /*
 ** informations about a call
@@ -167,6 +172,7 @@ struct lua_State {
   int hookcount;
   lua_Hook hook;
   TValue env;  /* temporary place for environments */
+  LexEnv *lexenv; /* linked list of active lexical environments, in case of errors */
   GCObject *openupval;  /* list of open upvalues in this stack */
   GCObject *gclist;
   struct lua_longjmp *errorJmp;  /* current error recover point */

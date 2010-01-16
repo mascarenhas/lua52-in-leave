@@ -71,12 +71,11 @@
 
 #endif
 
-
-
 /* chain list of long jump buffers */
 struct lua_longjmp {
   struct lua_longjmp *previous;
   luai_jmpbuf b;
+  LexEnv *env;
   volatile int status;  /* error code */
 };
 
@@ -99,14 +98,47 @@ static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
   L->top = oldtop + 1;
 }
 
+void luaD_enter(lua_State *L, StkId ra) {
+  if(L->errorJmp) {
+    LexEnv *env = luaM_new(L, LexEnv);
+    env->parent = L->errorJmp->env;
+    env->reg = ra;
+    L->errorJmp->env = env;
+  } else {
+    LexEnv *env = luaM_new(L, LexEnv);
+    env->parent = L->lexenv;
+    env->reg = ra;
+    L->lexenv = env;
+  }
+}
+
+void luaD_leave(lua_State *L) {
+  if(L->errorJmp) {
+    LexEnv *env = L->errorJmp->env;
+    if(env) {
+      L->errorJmp->env = env->parent;
+      luaM_free(L, env);
+    }
+  } else {
+    LexEnv *env = L->lexenv;
+    if(env) {
+      L->lexenv = env->parent;
+      luaM_free(L, env);
+    }
+  }
+}
 
 void luaD_throw (lua_State *L, int errcode) {
   if (L->errorJmp) {  /* thread has an error handler? */
     L->errorJmp->status = errcode;  /* set status */
+    while(L->errorJmp->env)
+      luaV_leave(L, L->errorJmp->env->reg);
     LUAI_THROW(L, L->errorJmp);  /* jump to it */
   }
   else {  /* thread has no error handler */
     L->status = cast_byte(errcode);  /* mark it as dead */
+    while(L->lexenv)
+      luaV_leave(L, L->lexenv->reg);
     if (G(L)->mainthread->errorJmp) {  /* main thread has a handler? */
       setobjs2s(L, G(L)->mainthread->top++, L->top - 1);  /* copy error obj. */
       luaD_throw(G(L)->mainthread, errcode);  /* re-throw in main thread */
@@ -127,6 +159,7 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
   struct lua_longjmp lj;
   lj.status = LUA_OK;
   lj.previous = L->errorJmp;  /* chain new error handler */
+  lj.env = NO_LEXENV;
   L->errorJmp = &lj;
   LUAI_TRY(L, &lj,
     (*f)(L, ud);

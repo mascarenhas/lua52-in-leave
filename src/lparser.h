@@ -61,6 +61,12 @@ typedef struct Varlist {
 
 struct BlockCnt;  /* defined in lparser.c */
 
+#define NO_LEXENV NULL
+
+typedef struct LexEnvState {
+  lu_byte reg;
+  struct LexEnvState *parent;
+} LexEnvState;
 
 /* state needed to generate code for a given function */
 typedef struct FuncState {
@@ -80,7 +86,7 @@ typedef struct FuncState {
   short nlocvars;  /* number of elements in `locvars' */
   lu_byte nactvar;  /* number of active local variables */
   lu_byte nups;  /* number of upvalues */
-  lu_byte envreg;  /* register holding current lexical environment */
+  LexEnvState *envreg;  /* register holding current lexical environment */
 } FuncState;
 
 

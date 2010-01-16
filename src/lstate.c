@@ -186,6 +186,7 @@ static void preinit_state (lua_State *L, global_State *g) {
   L->base_ci.next = L->base_ci.previous = NULL;
   L->ci = &L->base_ci;
   L->errfunc = 0;
+  L->lexenv = NULL;
 }
 
 

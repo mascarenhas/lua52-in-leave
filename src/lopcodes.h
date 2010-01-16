@@ -196,6 +196,9 @@ OP_CONCAT,/*	A B C	R(A) := R(B).. ... ..R(C)			*/
 
 OP_JMP,/*	sBx	pc+=sBx					*/
 
+OP_ENTER,/*     A                                                       */  
+OP_LEAVE,/*     A       if R(A)["leave"] then R(A)["leave"](R(A))       */  
+
 OP_EQ,/*	A B C	if ((RK(B) == RK(C)) ~= A) then pc++		*/
 OP_LT,/*	A B C	if ((RK(B) <  RK(C)) ~= A) then pc++		*/
 OP_LE,/*	A B C	if ((RK(B) <= RK(C)) ~= A) then pc++		*/

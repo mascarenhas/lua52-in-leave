@@ -275,11 +275,11 @@ static void singlevar (LexState *ls, expdesc *var) {
   TString *varname = str_checkname(ls);
   FuncState *fs = ls->fs;
   if (singlevaraux(fs, varname, var, 1) == VGLOBAL) {
-    if (fs->envreg == NO_REG)  /* regular global? */
+    if (fs->envreg == NO_LEXENV)  /* regular global? */
       init_exp(var, VGLOBAL, luaK_stringK(fs, varname));
     else {  /* "globals" are in current lexical environment */
       expdesc key;
-      init_exp(var, VLOCAL, fs->envreg);  /* current environment */
+      init_exp(var, VLOCAL, fs->envreg->reg);  /* current environment */
       codestring(ls, &key, varname);  /* key is variable name */
       luaK_indexed(fs, var, &key);  /* env[varname] */
     }
@@ -351,7 +351,7 @@ static void pushclosure (LexState *ls, Proto *clp, expdesc *v) {
   while (oldsize < f->sizep) f->p[oldsize++] = NULL;
   f->p[fs->np++] = clp;
   /* initial environment for new function is current lexical environment */
-  clp->envreg = fs->envreg;
+  clp->envreg = fs->envreg == NO_LEXENV ? NO_REG : fs->envreg->reg;
   luaC_objbarrier(ls->L, f, clp);
   init_exp(v, VRELOCABLE, luaK_codeABx(fs, OP_CLOSURE, 0, fs->np-1));
 }
@@ -374,7 +374,7 @@ static void open_func (LexState *ls, FuncState *fs) {
   fs->nlocvars = 0;
   fs->nactvar = 0;
   fs->firstlocal = ls->varl->nactvar;
-  fs->envreg = NO_REG;
+  fs->envreg = NO_LEXENV;
   fs->bl = NULL;
   f = luaF_newproto(L);
   fs->f = f;
@@ -1030,6 +1030,13 @@ static void breakstat (LexState *ls) {
     luaX_syntaxerror(ls, "no loop to break");
   if (upval)
     luaK_codeABC(fs, OP_CLOSE, bl->nactvar, 0, 0);
+  if (fs->envreg != NO_LEXENV) {  /* lexical environment? */
+    LexEnvState *env = fs->envreg;
+    while(env != NO_LEXENV) {
+      luaK_codeABC(fs, OP_LEAVE, env->reg, 0, 0);
+      env = env->parent;
+    }
+  }
   luaK_concat(fs, &bl->breaklist, luaK_jump(fs));
 }
 
@@ -1277,18 +1284,22 @@ static void funcstat (LexState *ls, int line) {
 static void instat (LexState *ls, int line) {
   /* instat -> IN exp DO block END */
   FuncState *fs = ls->fs;
-  int oldenv = fs->envreg;  /* save current environment */
+  LexEnvState env;
+  env.parent = fs->envreg; /* save current environment */
   BlockCnt bl;
   luaX_next(ls);  /* skip IN */
   enterblock(fs, &bl, 0);  /* scope for environment variable */
   new_localvarliteral(ls, "(environment)");
-  fs->envreg = exp1(ls);  /* new environment */
+  env.reg = exp1(ls); /* new environment */
+  fs->envreg = &env;  /* new environment */
   adjustlocalvars(ls, 1);
   checknext(ls, TK_DO);
+  luaK_codeABC(fs, OP_ENTER, env.reg, 0, 0);
   block(ls);
   leaveblock(fs);
+  luaK_codeABC(fs, OP_LEAVE, env.reg, 0, 0);
   check_match(ls, TK_END, TK_IN, line);
-  fs->envreg = oldenv;  /* restore outer environment */
+  fs->envreg = env.parent;  /* restore outer environment */
 }
 
 
@@ -1333,6 +1344,13 @@ static void retstat (LexState *ls) {
         first = fs->nactvar;  /* return all `active' values */
         lua_assert(nret == fs->freereg - first);
       }
+    }
+  }
+  if (fs->envreg != NO_LEXENV) {  /* lexical environment? */
+    LexEnvState *env = fs->envreg;
+    while(env != NO_LEXENV) {
+      luaK_codeABC(fs, OP_LEAVE, env->reg, 0, 0);
+      env = env->parent;
     }
   }
   luaK_ret(fs, first, nret);

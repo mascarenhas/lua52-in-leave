@@ -38,5 +38,6 @@ LUAI_FUNC void luaV_concat (lua_State *L, int total);
 LUAI_FUNC void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
                            const TValue *rc, TMS op);
 LUAI_FUNC void luaV_objlen (lua_State *L, StkId ra, const TValue *rb);
+LUAI_FUNC void luaV_leave(lua_State *L, StkId t);
 
 #endif
