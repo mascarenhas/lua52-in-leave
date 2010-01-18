@@ -45,6 +45,7 @@ typedef struct BlockCnt {
   lu_byte nactvar;  /* # active locals outside the breakable structure */
   lu_byte upval;  /* true if some variable in the block is an upvalue */
   lu_byte isbreakable;  /* true if `block' is a loop */
+  LexEnvState *lexenv; /* lexical environment at point of entry */
 } BlockCnt;
 
 
@@ -323,6 +324,7 @@ static void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable) {
   bl->nactvar = fs->nactvar;
   bl->upval = 0;
   bl->previous = fs->bl;
+  bl->lexenv = fs->envreg;
   fs->bl = bl;
   lua_assert(fs->freereg == fs->nactvar);
 }
@@ -1030,7 +1032,7 @@ static void breakstat (LexState *ls) {
     luaX_syntaxerror(ls, "no loop to break");
   if (upval)
     luaK_codeABC(fs, OP_CLOSE, bl->nactvar, 0, 0);
-  luaK_leavelexenvs(fs);
+  luaK_leavelexenvs(fs, bl->lexenv);
   luaK_concat(fs, &bl->breaklist, luaK_jump(fs));
 }
 
@@ -1340,7 +1342,7 @@ static void retstat (LexState *ls) {
       }
     }
   }
-  luaK_leavelexenvs(fs);
+  luaK_leavelexenvs(fs, NULL);
   luaK_ret(fs, first, nret);
 }
 
