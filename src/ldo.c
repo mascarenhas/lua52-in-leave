@@ -132,13 +132,13 @@ void luaD_throw (lua_State *L, int errcode) {
   if (L->errorJmp) {  /* thread has an error handler? */
     L->errorJmp->status = errcode;  /* set status */
     while(L->errorJmp->env)
-      luaV_leave(L, L->errorJmp->env->reg);
+      luaV_leave(L, L->errorJmp->env->reg, 1);
     LUAI_THROW(L, L->errorJmp);  /* jump to it */
   }
   else {  /* thread has no error handler */
     L->status = cast_byte(errcode);  /* mark it as dead */
     while(L->lexenv)
-      luaV_leave(L, L->lexenv->reg);
+      luaV_leave(L, L->lexenv->reg, 1);
     if (G(L)->mainthread->errorJmp) {  /* main thread has a handler? */
       setobjs2s(L, G(L)->mainthread->top++, L->top - 1);  /* copy error obj. */
       luaD_throw(G(L)->mainthread, errcode);  /* re-throw in main thread */

@@ -408,16 +408,19 @@ void luaV_finishOp (lua_State *L) {
   }
 }
 
-void luaV_leave(lua_State *L, StkId t) {
+void luaV_leave(lua_State *L, StkId t, int haserror) {
   const TValue *tmleave;
   luaD_leave(L);
   tmleave = luaT_gettmbyobj(L, t, TM_LEAVE);
   if(!ttisnil(tmleave)) {
+    TValue *err = L->top - 1;
     setobj2s(L, L->top++, tmleave);  /* push function */
     setobj2s(L, L->top++, t);  /* 1st argument */
+    if(haserror)
+      setobj2s(L, L->top++, err);  /* 1st argument */
     luaD_checkstack(L, 0);
     /* metamethod may yield only when called from Lua code */
-    luaD_call(L, L->top - 2, 0, isLua(L->ci));
+    luaD_call(L, L->top - 2 - haserror, 0, isLua(L->ci));
   }
 }
 
@@ -523,7 +526,7 @@ void luaV_execute (lua_State *L) {
 	continue;
       }
       case OP_LEAVE: {
-	Protect(luaV_leave(L, ra));
+	Protect(luaV_leave(L, ra, 0));
         continue;
       }
       case OP_SETGLOBAL: {
