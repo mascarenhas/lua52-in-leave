@@ -10,7 +10,8 @@ handler shadows the error that caused it to be called.
 See leave-example/in.lua for several examples of __leave in
 action.
 
-The original README is below the fold.
+The original README is below the fold. The license of this
+derived work is the same as Lua's.
 
 -------
 
