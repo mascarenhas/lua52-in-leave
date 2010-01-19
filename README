@@ -1,3 +1,19 @@
+This is a patched version of Lua 5.2 (work2) that, on exiting
+an in <env> do ... end block, checks if <env> has a __leave
+metamethod and calls it if it exists, passing <env>.
+
+The metamethod is called on normal exits, returns, breaks, and
+errors. In the latter case the error object is passed as the
+second argument to __leave. Currently an error inside a __leave
+handler shadows the error that caused it to be called.
+
+See leave-example/in.lua for several examples of __leave in
+action.
+
+The original README is below the fold.
+
+-------
+
 This is Lua 5.2 (work2), released on 13 Jan 2010.
 
 For information about Lua, including installation instructions and
